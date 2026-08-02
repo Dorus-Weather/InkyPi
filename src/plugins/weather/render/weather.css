@@ -13,7 +13,7 @@
   gap: 1dvh;
   width: 100%;
   height: 100%;
-  padding-bottom: 3.5dvh;
+  padding-bottom: 1.5dvh;
   font-family: "Jost", sans-serif;
   position: relative;
 }
@@ -33,7 +33,7 @@
 
 .last-refresh {
   position: absolute;
-  bottom: 0.5dvh;
+  top: 0dvh;
   right: 0.5dvw;
   font-size: min(2dvh, 2vw);
   text-align: right;
@@ -192,14 +192,18 @@
   width: 20%;
   height: auto;
   flex-shrink: 0;
+  fill: #2f74ad;
+  stroke: #2f74ad;
+  stroke-width: 1.6;
+  stroke-linejoin: round;
 }
 
 .humidity-drop:not(:first-child) {
   margin-left: -8%;
 }
 
-.humidity-drop-hidden {
-  visibility: hidden;
+.humidity-drop-empty {
+  fill: none;
 }
 
 .data-point-data {
@@ -243,8 +247,9 @@
   flex-wrap: nowrap;
   justify-content: space-evenly;
   align-items: center;
+  margin-top: 2dvh;
   width: 100%;
-  height: 26dvh;
+  height: 21dvh;
   gap: 1.5dvw;
   overflow: hidden;
 }
@@ -253,7 +258,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 1dvh 1vw 2.5dvh 1vw;
+  padding: 1dvh 1vw 1.5dvh 1vw;
   border-width: 2px;
   border-style: outset;
   border-color: #5a9c5a;

@@ -58,30 +58,26 @@
                 <line x1="47" y1="27" x2="153" y2="133"/>
               </g>
               <g style="transform-origin: 100px 80px; transform: rotate({{ dp.rotation }}deg);">
-                <path d="M100,12 L121,98 L100,92 L79,98 Z" fill="#c0392b"/>
+                <path d="M100,10 L116,115 L100,109 L84,115 Z" fill="#c0392b"/>
               </g>
               <circle cx="100" cy="80" r="8" fill="white"/>
             </svg>
             {% elif dp.is_humidity %}
-            {% set top_count = [dp.drop_count, 3] | min %}
-            {% set bottom_count = dp.drop_count - top_count %}
             <div class="humidity-drops">
               <div class="humidity-drop-row">
-                {% for _ in range(top_count) %}
-                <svg class="humidity-drop" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 2C12 2 5 10.5 5 15.5C5 19.09 8.13 22 12 22C15.87 22 19 19.09 19 15.5C19 10.5 12 2 12 2Z" fill="#2f74ad"/>
+                {% for i in range(3) %}
+                <svg class="humidity-drop{% if i >= dp.drop_count %} humidity-drop-empty{% endif %}" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2C12 2 5 10.5 5 15.5C5 19.09 8.13 22 12 22C15.87 22 19 19.09 19 15.5C19 10.5 12 2 12 2Z"/>
                 </svg>
                 {% endfor %}
               </div>
-              {% if bottom_count > 0 %}
               <div class="humidity-drop-row">
-                {% for i in range(2) %}
-                <svg class="humidity-drop{% if i >= bottom_count %} humidity-drop-hidden{% endif %}" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 2C12 2 5 10.5 5 15.5C5 19.09 8.13 22 12 22C15.87 22 19 19.09 19 15.5C19 10.5 12 2 12 2Z" fill="#2f74ad"/>
+                {% for i in range(3, 5) %}
+                <svg class="humidity-drop{% if i >= dp.drop_count %} humidity-drop-empty{% endif %}" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2C12 2 5 10.5 5 15.5C5 19.09 8.13 22 12 22C15.87 22 19 19.09 19 15.5C19 10.5 12 2 12 2Z"/>
                 </svg>
                 {% endfor %}
               </div>
-              {% endif %}
             </div>
             {% elif dp.is_pressure %}
             <svg class="pressure-gauge-icon" viewBox="0 0 200 150" xmlns="http://www.w3.org/2000/svg" style="-webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;">
@@ -238,7 +234,7 @@
 
     // Round the rain axis up to a clean number of mm/in, with a small non-zero floor
     const maxRainValue = Math.max(...rain, 0);
-    const rainAxisMax = maxRainValue > 0 ? Math.ceil(maxRainValue * 10) / 10 : 1;
+    const rainAxisMax = Math.max(1, Math.ceil(maxRainValue * 10) / 10);
 	
     {% if plugin_settings.displayGraphIcons == "true" %}
     const sunIconByHourIndex = {};
