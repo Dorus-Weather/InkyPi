@@ -1,6 +1,6 @@
 # InkyPi 
 
-<img src="./docs/images/inky_clock.jpg" />
+<img src="./docs/images/unified_eink_bugfix_test.png" />
 
 
 ## About InkyPi 
