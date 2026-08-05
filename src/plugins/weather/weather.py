@@ -801,7 +801,12 @@ class Weather(BasePlugin):
             humidity = float(humidity)
         except (TypeError, ValueError):
             return 1
-        return min(5, max(1, math.ceil(humidity / 20)))
+        # 0-5%: 0 drops, then a 20-point band per drop up to 85-100%: 5 drops.
+        thresholds = [5, 25, 45, 65, 85]
+        for count, threshold in enumerate(thresholds):
+            if humidity < threshold:
+                return count
+        return 5
 
     def get_pressure_gauge_rotation(self, pressure) -> float:
         # Maps the typical 970-1050 hPa range onto a 180° needle sweep
