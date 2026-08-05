@@ -279,7 +279,11 @@
   flex: 1;
   width: 100%;
   min-width: 0;
-  min-height: 0;
+  /* With moonPhase on, the moon-phase-container's own row also wants space
+     in this column, and flex:1 alone let it get squeezed down to almost
+     nothing to make room - a floor keeps the main weather icon legible
+     regardless of what else is in the card. */
+  min-height: 8dvh;
   object-fit: contain;
   padding: 0;
 }
@@ -416,8 +420,16 @@
 }
 
 .weather-dashboard.style-eink .current-date {
-  font-size: min(40cqh, 7.5cqi);
   font-weight: bold;
+}
+
+/* Only bump the font-size for the with-title case - .no-title .current-date
+   (unchanged, shared by both modes) already compensates for the shorter
+   no-title header with its own larger cqh value; overriding it here with a
+   value tuned for the taller with-title header made it render smaller than
+   intended whenever no custom title is set (the common case). */
+.weather-dashboard.style-eink:not(.no-title) .current-date {
+  font-size: min(40cqh, 7.5cqi);
 }
 
 .weather-dashboard.style-eink .data-point-icon[src$="visibility.png"] {
@@ -432,9 +444,16 @@
   transform: scale(1.2);
 }
 
+/* stroke applies to every drop (border always visible, both states) */
 .weather-dashboard.style-eink .humidity-drop {
-  fill: #0d47a1;
   stroke: #0d47a1;
+}
+
+/* fill only applies to filled drops - :not() keeps this from beating
+   .humidity-drop-empty's fill:none on specificity, which previously made
+   every drop (filled and empty alike) render solid. */
+.weather-dashboard.style-eink .humidity-drop:not(.humidity-drop-empty) {
+  fill: #0d47a1;
 }
 
 .weather-dashboard.style-eink .data-point-label,
