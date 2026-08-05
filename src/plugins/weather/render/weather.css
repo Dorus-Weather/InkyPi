@@ -403,3 +403,44 @@
     font-family: "Dogica";
   }
 }
+
+/* E-Ink (dithered display) overrides - bolder/darker/bigger than the LCD
+   defaults above so everything stays legible after Impression Spectra 7.3's
+   dithering. Selected via the weather plugin's "Display Type" setting -
+   see DISPLAY_STYLES in weather.py. Only pure CSS-expressible differences
+   live here; the wind compass and pressure gauge also differ in actual SVG
+   geometry and are handled as separate markup blocks in weather.html. */
+.weather-dashboard.style-eink .last-refresh {
+  font-size: min(3dvh, 2.8vw);
+  color: #333;
+}
+
+.weather-dashboard.style-eink .current-date {
+  font-size: min(40cqh, 7.5cqi);
+  font-weight: bold;
+}
+
+.weather-dashboard.style-eink .data-point-icon[src$="visibility.png"] {
+  transform: scale(0.9);
+}
+
+.weather-dashboard.style-eink .pressure-gauge-icon {
+  transform: scale(0.95);
+}
+
+.weather-dashboard.style-eink .uv-icon {
+  transform: scale(1.2);
+}
+
+.weather-dashboard.style-eink .humidity-drop {
+  fill: #0d47a1;
+  stroke: #0d47a1;
+}
+
+.weather-dashboard.style-eink .data-point-label,
+.weather-dashboard.style-eink .data-point-unit,
+.weather-dashboard.style-eink .forecast-temps,
+.weather-dashboard.style-eink .min-max,
+.weather-dashboard.style-eink .feels-like {
+  font-weight: bold;
+}
