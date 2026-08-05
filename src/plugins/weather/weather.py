@@ -60,10 +60,64 @@ UNITS = {
     }
 }
 
+# Two visual presets for the same markup: "lcd" (thin/light, for a normal
+# non-dithering display) and "eink" (bold/dark, tuned for the Pimoroni
+# Impression Spectra 7.3's dithering) - selected per plugin instance via the
+# displayType setting. Only holds pure color/width/size values; the wind
+# compass and pressure gauge also have real geometry differences between the
+# two looks and are handled as full conditional blocks in weather.html
+# instead of being shoehorned into this dict.
+DISPLAY_STYLES = {
+    "lcd": {
+        "mode": "lcd",
+        "icon_folder": "icons",
+        "uv_low_color": (255, 242, 178),
+        "uv_high_color": (193, 68, 14),
+        "aqi_band_width": 22,
+        "chart": {
+            "orange": "rgba(241, 122, 36, 0.9)",
+            "blue_minmax": "rgba(13, 71, 161, 0.9)",
+            "bar_color": "rgba(26, 111, 176, 1)",
+            "line_width": 2,
+            "bar_top_width": 2,
+            "minmax_line_width": 1.5,
+            "axis_font_weight": "normal",
+            "axis_border": False,
+            "title_size": 13,
+            "fill_top": "rgba(252,204,5, 0.4)",
+            "fill_mid": "rgba(252,204,5, 0.13)",
+            "precip_top": "rgba(26, 111, 176, 0.8)",
+            "precip_bottom": "rgba(194, 223, 246, 0)",
+        },
+    },
+    "eink": {
+        "mode": "eink",
+        "icon_folder": "icons/bold",
+        "uv_low_color": (255, 179, 0),
+        "uv_high_color": (216, 67, 21),
+        "aqi_band_width": 28,
+        "chart": {
+            "orange": "rgba(230, 81, 0, 1)",
+            "blue_minmax": "rgba(13, 71, 161, 1)",
+            "bar_color": "rgba(13, 71, 161, 1)",
+            "line_width": 4,
+            "bar_top_width": 3,
+            "minmax_line_width": 2.5,
+            "axis_font_weight": "bold",
+            "axis_border": True,
+            "title_size": 16,
+            "fill_top": "rgba(252,204,5, 0.65)",
+            "fill_mid": "rgba(252,204,5, 0.3)",
+            "precip_top": "rgba(13, 71, 161, 1)",
+            "precip_bottom": "rgba(13, 71, 161, 0.4)",
+        },
+    },
+}
+
 WEATHER_URL = "https://api.openweathermap.org/data/3.0/onecall?lat={lat}&lon={long}&units={units}&exclude=minutely&appid={api_key}"
 AIR_QUALITY_URL = "http://api.openweathermap.org/data/2.5/air_pollution?lat={lat}&lon={long}&appid={api_key}"
 GEOCODING_URL = "http://api.openweathermap.org/geo/1.0/reverse?lat={lat}&lon={long}&limit=1&appid={api_key}"
-NOMINATIM_REVERSE_URL = "https://nominatim.openstreetmap.org/reverse?lat={lat}&lon={long}&format=jsonv2&accept-language=en&zoom=14"
+NOMINATIM_REVERSE_URL = "https://nominatim.openstreetmap.org/reverse?lat={lat}&lon={long}&format=jsonv2&accept-language=nl&zoom=14"
 
 OPEN_METEO_FORECAST_URL = "https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={long}&hourly=weather_code,temperature_2m,precipitation,precipitation_probability,relative_humidity_2m,surface_pressure,visibility&daily=weathercode,temperature_2m_max,temperature_2m_min,sunrise,sunset&current=temperature,windspeed,winddirection,is_day,precipitation,weather_code,apparent_temperature&timezone=auto&models=best_match&forecast_days={forecast_days}"
 OPEN_METEO_AIR_QUALITY_URL = "https://air-quality-api.open-meteo.com/v1/air-quality?latitude={lat}&longitude={long}&hourly=european_aqi,uv_index,uv_index_clear_sky&timezone=auto"
@@ -95,6 +149,12 @@ class Weather(BasePlugin):
         units = settings.get('units')
         if not units or units not in ['metric', 'imperial', 'standard']:
             raise RuntimeError("Units are required.")
+
+        # Selected once per render and read by helper methods below (get_weather_icon_path,
+        # get_uv_color) via self._style - generate_image is never called concurrently for
+        # the same plugin instance, so this is safe despite the plugin instance being
+        # reused across renders (see plugin_registry.get_plugin_instance).
+        self._style = DISPLAY_STYLES.get(settings.get('displayType'), DISPLAY_STYLES['lcd'])
 
         weather_provider = settings.get('weatherProvider', 'OpenWeatherMap')
         title = settings.get('customTitle', '')
@@ -144,13 +204,14 @@ class Weather(BasePlugin):
 
         template_params["plugin_settings"] = settings
         template_params["nearest_location"] = self.get_nearest_location_name(lat, long)
+        template_params["style"] = self._style
 
         # Add last refresh time
         now = datetime.now(tz)
         if time_format == "24h":
-            last_refresh_time = now.strftime("%Y-%m-%d %H:%M")
+            last_refresh_time = now.strftime("%H:%M")
         else:
-            last_refresh_time = now.strftime("%Y-%m-%d %I:%M %p")
+            last_refresh_time = now.strftime("%I:%M %p")
         template_params["last_refresh_time"] = last_refresh_time
 
         image = self.render_image(dimensions, "weather.html", "weather.css", template_params)
@@ -173,7 +234,7 @@ class Weather(BasePlugin):
                 current_icon = current_icon.replace("n", "d")
         data = {
             "current_date": format_date_nl(dt),
-            "current_day_icon": self.get_plugin_dir(f'icons/{current_icon}.png'),
+            "current_day_icon": self.get_weather_icon_path(current_icon),
             "current_temperature": str(round(current.get("temp"))),
             "feels_like": str(round(current.get("feels_like"))),
             "temperature_unit": UNITS[units]["temperature"],
@@ -198,7 +259,7 @@ class Weather(BasePlugin):
 
         data = {
             "current_date": format_date_nl(dt),
-            "current_day_icon": self.get_plugin_dir(f'icons/{current_icon}.png'),
+            "current_day_icon": self.get_weather_icon_path(current_icon),
             "current_temperature": str(round(current.get("temperature", 0) + temperature_conversion)),
             "feels_like": str(round(current.get("apparent_temperature", current.get("temperature", 0)) + temperature_conversion)),
             "temperature_unit": UNITS[units]["temperature"],
@@ -263,6 +324,11 @@ class Weather(BasePlugin):
 
         return icon
 
+    def get_weather_icon_path(self, icon_name: str) -> str:
+        """Builds the path to an icon under the display style's icon folder
+        (icons/ for lcd, icons/bold/ for eink - see DISPLAY_STYLES)."""
+        return self.get_plugin_dir(f"{self._style['icon_folder']}/{icon_name}.png")
+
     def get_moon_phase_icon_path(self, phase_name: str, lat: float) -> str:
         """Determines the path to the moon icon, inverting it if the location is in the Southern Hemisphere."""
         # Waxing, Waning, First and Last quarter phases are inverted between hemispheres.
@@ -280,7 +346,7 @@ class Weather(BasePlugin):
             elif phase_name == "lastquarter":
                 phase_name = "firstquarter"
         
-        return self.get_plugin_dir(f"icons/{phase_name}.png")
+        return self.get_weather_icon_path(phase_name)
 
     def parse_forecast(self, daily_forecast, tz, current_suffix, lat):
         """
@@ -320,8 +386,8 @@ class Weather(BasePlugin):
             else:
                 if weather_icon.endswith('n'):
                     weather_icon = weather_icon.replace("n", "d")
-            weather_icon = f"{icon_code}d"        
-            weather_icon_path = self.get_plugin_dir(f"icons/{weather_icon}.png")
+            weather_icon = f"{icon_code}d"
+            weather_icon_path = self.get_weather_icon_path(weather_icon)
 
             # --- moon phase & icon ---
             moon_phase = float(day["moon_phase"])  # [0.0–1.0]
@@ -368,7 +434,7 @@ class Weather(BasePlugin):
 
             code = weather_codes[i] if i < len(weather_codes) else 0
             weather_icon = self.map_weather_code_to_icon(code, is_day=1)
-            weather_icon_path = self.get_plugin_dir(f"icons/{weather_icon}.png")
+            weather_icon_path = self.get_weather_icon_path(weather_icon)
 
             timestamp = int(dt.replace(hour=12, minute=0, second=0).timestamp())
             target_date: date = dt.date() + timedelta(days=1)
@@ -429,7 +495,7 @@ class Weather(BasePlugin):
                 "temperature": int(hour.get("temp")),
                 "precipitation": hour.get("pop"),
                 "rain": round(precip_value, 2),
-                "icon": self.get_plugin_dir(f'icons/{icon_name}.png')
+                "icon": self.get_weather_icon_path(icon_name)
             }
             hourly.append(hour_forecast)
 
@@ -451,7 +517,7 @@ class Weather(BasePlugin):
                     seen.add(epoch)
                     events.append({
                         "position": (epoch - start_epoch) / 3600,
-                        "icon": self.get_plugin_dir(f'icons/{icon_name}.png')
+                        "icon": self.get_weather_icon_path(icon_name)
                     })
         return events
 
@@ -504,7 +570,7 @@ class Weather(BasePlugin):
                 "temperature": int(sliced_temperatures[i]) if i < len(sliced_temperatures) else 0,
                 "precipitation": (sliced_precipitation_probabilities[i] / 100) if i < len(sliced_precipitation_probabilities) else 0,
                 "rain": (sliced_rain[i]) if i < len(sliced_rain) else 0,
-                "icon": self.get_plugin_dir(f"icons/{icon_name}.png")
+                "icon": self.get_weather_icon_path(icon_name)
             }
             hourly.append(hour_forecast)
 
@@ -575,7 +641,7 @@ class Weather(BasePlugin):
             "label": "Zicht",
             "measurement": visibility_str,
             "unit": UNITS[units]["distance"],
-            "icon": self.get_plugin_dir('icons/visibility.png')
+            "icon": self.get_weather_icon_path('visibility')
         })
 
         aqi = air_quality.get('list', [])[0].get("main", {}).get("aqi")
@@ -691,7 +757,7 @@ class Weather(BasePlugin):
             "label": "Zicht", 
             "measurement": visibility_str, 
             "unit": UNITS[units]["distance"],
-            "icon": self.get_plugin_dir('icons/visibility.png')
+            "icon": self.get_weather_icon_path('visibility')
         })
 
         # Air Quality
@@ -778,10 +844,11 @@ class Weather(BasePlugin):
         return min(1.0, max(0.0, uv_index / 11))
 
     def get_uv_color(self, uv_index) -> str:
-        # Whitish yellow (low UV) fading to dark orange (high UV).
-        LOW_COLOR, HIGH_COLOR = (255, 242, 178), (193, 68, 14)
+        # Low UV fading to high UV - endpoints come from the display style (bolder,
+        # more saturated on eink so low UV doesn't wash out under dithering).
+        low_color, high_color = self._style['uv_low_color'], self._style['uv_high_color']
         fraction = self.get_uv_fraction(uv_index)
-        r, g, b = (round(low + (high - low) * fraction) for low, high in zip(LOW_COLOR, HIGH_COLOR))
+        r, g, b = (round(low + (high - low) * fraction) for low, high in zip(low_color, high_color))
         return f"#{r:02x}{g:02x}{b:02x}"
 
     def get_uv_beam_points(self, uv_index, beam_count=10, cx=60, cy=60, core_r=24, min_len=10, max_len=32, half_width=5):
@@ -852,7 +919,7 @@ class Weather(BasePlugin):
         return location_str
 
     def get_nearest_location_name(self, lat, long):
-        # Free reverse geocoding (no API key required), English place names via accept-language=en.
+        # Free reverse geocoding (no API key required), Dutch place/country names via accept-language=nl.
         try:
             response = requests.get(
                 NOMINATIM_REVERSE_URL.format(lat=lat, long=long),

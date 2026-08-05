@@ -13,7 +13,7 @@
   gap: 1dvh;
   width: 100%;
   height: 100%;
-  padding-bottom: 3.5dvh;
+  padding-bottom: 1.5dvh;
   font-family: "Jost", sans-serif;
   position: relative;
 }
@@ -33,7 +33,7 @@
 
 .last-refresh {
   position: absolute;
-  bottom: 0.5dvh;
+  top: 0dvh;
   right: 0.5dvw;
   font-size: min(2dvh, 2vw);
   text-align: right;
@@ -192,14 +192,18 @@
   width: 20%;
   height: auto;
   flex-shrink: 0;
+  fill: #2f74ad;
+  stroke: #2f74ad;
+  stroke-width: 1.6;
+  stroke-linejoin: round;
 }
 
 .humidity-drop:not(:first-child) {
   margin-left: -8%;
 }
 
-.humidity-drop-hidden {
-  visibility: hidden;
+.humidity-drop-empty {
+  fill: none;
 }
 
 .data-point-data {
@@ -243,8 +247,9 @@
   flex-wrap: nowrap;
   justify-content: space-evenly;
   align-items: center;
+  margin-top: 2dvh;
   width: 100%;
-  height: 26dvh;
+  height: 21dvh;
   gap: 1.5dvw;
   overflow: hidden;
 }
@@ -253,7 +258,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 1dvh 1vw 2.5dvh 1vw;
+  padding: 1dvh 1vw 1.5dvh 1vw;
   border-width: 2px;
   border-style: outset;
   border-color: #5a9c5a;
@@ -274,7 +279,11 @@
   flex: 1;
   width: 100%;
   min-width: 0;
-  min-height: 0;
+  /* With moonPhase on, the moon-phase-container's own row also wants space
+     in this column, and flex:1 alone let it get squeezed down to almost
+     nothing to make room - a floor keeps the main weather icon legible
+     regardless of what else is in the card. */
+  min-height: 8dvh;
   object-fit: contain;
   padding: 0;
 }
@@ -397,4 +406,60 @@
   .weather-dashboard {
     font-family: "Dogica";
   }
+}
+
+/* E-Ink (dithered display) overrides - bolder/darker/bigger than the LCD
+   defaults above so everything stays legible after Impression Spectra 7.3's
+   dithering. Selected via the weather plugin's "Display Type" setting -
+   see DISPLAY_STYLES in weather.py. Only pure CSS-expressible differences
+   live here; the wind compass and pressure gauge also differ in actual SVG
+   geometry and are handled as separate markup blocks in weather.html. */
+.weather-dashboard.style-eink .last-refresh {
+  font-size: min(3dvh, 2.8vw);
+  color: #333;
+}
+
+.weather-dashboard.style-eink .current-date {
+  font-weight: bold;
+}
+
+/* Only bump the font-size for the with-title case - .no-title .current-date
+   (unchanged, shared by both modes) already compensates for the shorter
+   no-title header with its own larger cqh value; overriding it here with a
+   value tuned for the taller with-title header made it render smaller than
+   intended whenever no custom title is set (the common case). */
+.weather-dashboard.style-eink:not(.no-title) .current-date {
+  font-size: min(40cqh, 7.5cqi);
+}
+
+.weather-dashboard.style-eink .data-point-icon[src$="visibility.png"] {
+  transform: scale(0.9);
+}
+
+.weather-dashboard.style-eink .pressure-gauge-icon {
+  transform: scale(0.95);
+}
+
+.weather-dashboard.style-eink .uv-icon {
+  transform: scale(1.2);
+}
+
+/* stroke applies to every drop (border always visible, both states) */
+.weather-dashboard.style-eink .humidity-drop {
+  stroke: #0d47a1;
+}
+
+/* fill only applies to filled drops - :not() keeps this from beating
+   .humidity-drop-empty's fill:none on specificity, which previously made
+   every drop (filled and empty alike) render solid. */
+.weather-dashboard.style-eink .humidity-drop:not(.humidity-drop-empty) {
+  fill: #0d47a1;
+}
+
+.weather-dashboard.style-eink .data-point-label,
+.weather-dashboard.style-eink .data-point-unit,
+.weather-dashboard.style-eink .forecast-temps,
+.weather-dashboard.style-eink .min-max,
+.weather-dashboard.style-eink .feels-like {
+  font-weight: bold;
 }

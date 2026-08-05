@@ -27,6 +27,12 @@
         <option value="imperial">Imperial (°F)</option>
         <option value="standard">Standard (K)</option>
     </select>
+
+    <label for="displayType" class="form-label">Display Type:</label>
+    <select id="displayType" name="displayType" class="form-input">
+        <option value="lcd">LCD (standard, no dithering)</option>
+        <option value="eink">E-Ink (bold/dark, for dithered displays)</option>
+    </select>
 </div>
 
 <div class="form-group" id="titleOptionWrapper">
@@ -202,6 +208,7 @@
             document.getElementById('longitude').value = pluginSettings.longitude;
 
             document.getElementById('units').value = pluginSettings.units;
+            document.getElementById('displayType').value = pluginSettings.displayType || 'lcd';
 
             document.getElementById('displayRefreshTime').checked = pluginSettings.displayRefreshTime;
             document.getElementById('displayRefreshTime').value = pluginSettings.displayRefreshTime;
@@ -237,6 +244,7 @@
             document.getElementById('latitude').value = "51.0004365";
             document.getElementById('longitude').value = "5.8993687";
             document.getElementById('units').value = "metric";
+            document.getElementById('displayType').value = "lcd";
             document.getElementById('backgroundColor').value = "#FFF8E5";
             document.getElementById('displayRefreshTime').checked = true;
             document.getElementById('displayRefreshTime').value = "true";
